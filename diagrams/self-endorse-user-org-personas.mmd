@@ -1,0 +1,23 @@
+sequenceDiagram
+
+    participant APP as Tenant App
+    participant DKMSDK as DK Mobile SDK
+    participant DKAPI as DK API
+    participant DKT as DK Tendermint
+    participant DKABCI as DK ABCI App
+    participant DKDD as DK Datom Database
+
+    APP->>DKMSDK: invoke `endorseUserOrgPersonas` with identity keypair and id token
+    DKMSDK->>DKAPI: signed request to `endorseUserOrgPersonas` endpoint
+    Note right of DKMSDK: id token is sent along but outside the signed payload
+    DKAPI->>DKAPI: verify signature, id token expiry and signature ( using configured auth server pub key )
+    DKAPI->>DKAPI: verify `orgId` and `userOrgPersonas` with id token
+    DKAPI->>DKT: broadcast endorse tx with signed payload contents
+    DKT->>DKABCI: beginBlock
+    DKT->>DKABCI: deliverTx
+    DKABCI->>DKDD: find `User` using the `pub key` hash and fetch associated `active?` `UserOrgPersona` list for `orgID`
+    DKABCI->>DKABCI: compare fetched `UserOrgPersona` list with `userOrgPersonas` claim value
+    DKABCI->>DKDD: set `active?` to false for `UserOrgPersona` entries which are not matched with `userOrgPersonas` claim value
+    DKABCI->>DKDD: create `UserOrgPersona` for items in `userOrgPersonas` claim value and not in `UserOrgPersona` fetched entries
+    Note right of DKABCI: use api provided uuid as `Persona/id`
+    DKT->>DKABCI: endBlock

@@ -1,0 +1,25 @@
+sequenceDiagram
+
+    participant APP as Tenant App
+    participant DKMSDK as DK Mobile SDK
+    participant DKAPI as DK API
+    participant DKT as DK Tendermint
+    participant DKABCI as DK ABCI App
+    participant DKDD as DK Datom Database
+    participant DKMT as DK Merkle Tree
+    participant DKDSDK as DK Device SDK
+
+    APP->>+DKMSDK: invoke `retrieveBlockHashPkgs` with trusted `blockHashPkg` and `authDocProofPkg`
+    DKMSDK->>+DKMSDK: deserialise `blockHashPkg` and `authDocProofPkg` args and extract trusted `height` and proof `height`
+    DKMSDK->>DKAPI: signed request to `retrieveBlockHashPkgs` endpoint with trusted `height` and proof `height`
+    DKAPI->>DKABCI: pass through signed request body
+    DKABCI->>DKABCI: verify request signature for user
+    %% commented lines below are required to support validator node changes
+    %% not needed initially during dev
+    %% DKABCI->>DKDD: query for stored intermediate `blockHashPkg`s  with trusted `height` and proof `height` + 1
+    %% DKABCI->>DKAPI: return results
+    DKAPI->>DKT: invoke /commit endpoint with proof `height` + 1
+    DKAPI->>DKT: invoke /validators endpoint with proof `height` + 1
+    DKAPI->>DKAPI: compose proof `blockHashPpkg` with data returned from /commit and /validators
+    DKAPI->>DKAPI: append proof `blockHashPpkg` to list of intermediate `blockHashPpkg`s
+    DKAPI->>DKMSDK: serialise `blockHashPpkg`s with cbor and return

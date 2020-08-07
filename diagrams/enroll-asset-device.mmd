@@ -1,0 +1,37 @@
+sequenceDiagram
+
+    participant A as AdminApp
+    participant DKMSDK as DK Mobile SDK
+    participant DKAPI as DK API
+    participant DKT as DK Tendermint
+    participant DKABCI as DK ABCI App
+    participant DKDD as DK Datom Database
+    participant DKMT as DK Merkle Tree
+
+    A->>+DKMSDK: invoke `enrollAssetDevice` with `assetId`, `assetDeviceId`, `deviceSignPubKey`, `deviceEncPubKey` and `metadata`
+    Note over A,DKAPI: `deviceSignPubKey` and `deviceEncPubKey` are asset device keys
+    DKMSDK->>+DKAPI: signed request to `enrollAssetDevice` endpoint with `userDeviceId`, `orgId`, `assetId`, `assetDeviceId`, `deviceSignPubKey` `deviceEncPubKey` and `metadata`
+    DKAPI->>DKAPI: augment request body with random persona/id (uuid)
+    DKAPI->>+DKT: broadcast tx with signed request body encoded into `tx` param
+    DKT->>+DKABCI: deliverTx
+
+    DKABCI->>DKABCI: decode `tx` param and verify request signature
+    DKABCI->>+DKABCI: verify user has installer persona for given `orgId`
+    DKABCI->>DKABCI: query user+persona by `userDeviceId` and `orgId`
+    DKABCI->>-DKABCI: throw if verification failed
+
+    DKABCI->>+DKABCI: verify asset does not exist or is not associated with different organization
+    DKABCI->>DKDD: query asset by `assetId`
+    DKABCI->>-DKABCI: throw if verification failed
+
+    DKABCI->>+DKABCI: verify asset device does not exist or is not associated with different asset
+    DKABCI->>DKDD: query asset device by `assetDeviceId`
+    DKABCI->>-DKABCI: throw if verification failed
+
+    DKABCI->>DKDD: create asset and asset device associated together, and grant `owner` OrgAssetPersona to given `orgId` over the asset
+    DKABCI->>DKMT: create assetDeviceAuthDoc
+    
+    DKABCI->>-DKT: return
+    DKT->>-DKAPI: pass through broadcast tx response
+    DKAPI->>-DKMSDK: return
+    DKMSDK->>-A: return

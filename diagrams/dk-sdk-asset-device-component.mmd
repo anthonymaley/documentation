@@ -1,0 +1,6 @@
+classDiagram
+
+    class DKDeviceSDK
+    DKDeviceSDK : +verifyBlockHashPkg(byte[] trustedBlockHashPkg, byte[] incomingBlockHashPkg)
+    DKDeviceSDK : +verifyAuthDocProofPkg(byte[] trustedBlockHashPkg, byte[] authDocProofPkg)
+    DKDeviceSDK : +parseUserPersonaAuthDoc(byte[] authDocProofPkg) UserPersonaAuthDoc

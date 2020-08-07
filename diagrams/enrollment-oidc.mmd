@@ -1,0 +1,24 @@
+sequenceDiagram
+    participant APP as Tenant app
+    participant DKSDK as Digital Key SDK
+    participant AA as AppAuth SDK
+    participant DKAPI as Digital Key API
+    participant T as Tendermint RPC
+    participant DKABCI as Digital Key API ABCI app
+    APP->>APP: initialise Identity keypair
+    APP->>AA: OIDC login with credentials such as username / password and a client id, returning id and access tokens
+    APP->>DKSDK: `initConfig` with DK API url
+    APP->>DKSDK: enroll with id token
+    DKSDK->>DKAPI: signed request to `enroll` endpoint
+    Note right of DKSDK: signed payload containing the identity `pub key`, `email_verified`, `phone_number_verified` and digests of `sub` (user id), `email`, `phone_number` claims
+    Note right of DKSDK: id token is sent along but outside the signed payload
+    DKAPI->>DKAPI: verify signature, id token expiry and signature ( using configured auth server pub key )
+    DKAPI->>DKAPI: verify digests and clear text values against id token
+    Note right of DKAPI: ensure `email_verified` and `phone_number_verified`
+    DKAPI->>T: broadcast enroll tx with signed envelope contents
+    Note right of T: broadcast_tx_commit can be used to keep things simple while investigating broadcast_tx_sync
+    T->>DKABCI: beginBlock
+    T->>DKABCI: deliverTx
+    DKABCI->>DKABCI: find and create/update user with user id, email and phone_nymber digests
+    DKABCI->>DKABCI: create user device with pub key and associate with user
+    T->>DKABCI: endBlock

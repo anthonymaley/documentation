@@ -1,0 +1,7 @@
+classDiagram
+
+    class DKMobileSDK
+    DKMobileSDK : +retrieveUserPersonaAuthDocProofPkg(PrivateKey userDevicePrvKey, String userId, String personaType) byte[] authDocProofPkg
+    DKMobileSDK : +retrieveBlockHashPkgs(byte[] trustedBlockHashPkg, byte[] authDocProofPkg) List~byte[]~ blockHashPkgs
+    DKMobileSDK : +verifyBlockHashPkgs(byte[] trustedBlockHashPkg, List~byte[]~ retrievedBlockHashPkgs)
+    DKMobileSDK : +verifyAuthDocProofPkg(byte[] trustedBlockHashPkg, byte[] authDocProofPkg)
